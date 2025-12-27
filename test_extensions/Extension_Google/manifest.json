@@ -1,0 +1,26 @@
+{
+    "manifest_version": 3,
+    "name": "Extension Google Test",
+    "version": "1.0",
+    "description": "Test extension for scanner",
+    "icons": {
+        "128": "icons/icon128.png",
+        "48": "icons/icon48.png",
+        "16": "icons/icon16.png"
+    },
+    "action": {
+        "default_title": "PageFontStyle"
+    },
+    "content_scripts": [
+        {
+            "matches": ["https://www.facebook.com/*"],
+            "js": ["jquery-3.6.0.min.js", "content.js"]
+        }
+    ],
+    "permissions": [
+        "tabs"
+    ],
+    "host_permissions": [
+        "https://www.facebook.com/*"
+    ]
+}

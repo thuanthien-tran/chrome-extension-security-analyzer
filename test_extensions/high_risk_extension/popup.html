@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced Analytics Tracker</title>
+    <style>
+        body {
+            width: 400px;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .stats {
+            margin: 10px 0;
+        }
+        .stat-item {
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+        button {
+            padding: 10px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        h3 {
+            color: #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <h3>Advanced Analytics Tracker</h3>
+    <div class="stats">
+        <div class="stat-item">
+            <strong>Status:</strong> Active
+        </div>
+        <div class="stat-item">
+            <strong>Tracking:</strong> Enabled
+        </div>
+        <button id="viewData">View Tracked Data</button>
+        <button id="viewCookies">View Cookies</button>
+        <button id="viewHistory">View History</button>
+        <button id="clearData">Clear All Data</button>
+        <button id="exportData">Export Data</button>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extension Analyzer - Web Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div>
+                    <h1><i class="fas fa-shield-alt"></i> Extension Analyzer</h1>
+                    <p class="subtitle">Non-ML Security Analysis Tool</p>
+                </div>
+                <button class="refresh-btn" id="refreshBtn" title="Làm mới trang">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Analysis Form -->
+            <section class="analysis-section">
+                <div class="card">
+                    <h2><i class="fas fa-search"></i> Analyze Extension</h2>
+                    
+                    <!-- Tab Selection -->
+                    <div class="scan-tabs">
+                        <button class="scan-tab-btn active" data-scan-mode="folder">
+                            <i class="fas fa-folder-open"></i> Chọn Thư Mục Extension
+                        </button>
+                        <button class="scan-tab-btn" data-scan-mode="database">
+                            <i class="fas fa-database"></i> Phân Tích Từ Database
+                        </button>
+                        <button class="scan-tab-btn" data-scan-mode="installed">
+                            <i class="fas fa-chrome"></i> Extension Đã Cài Đặt Trên Chrome
+                        </button>
+                    </div>
+
+                    <!-- Folder Scan Form -->
+                    <form id="scanForm" class="analyze-form" style="display: block;">
+                        <!-- Upload Options Tabs -->
+                        <div class="upload-tabs" style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid var(--border-color);">
+                            <button type="button" class="upload-tab-btn active" data-upload-mode="zip" style="padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; color: var(--text-secondary);">
+                                <i class="fas fa-file-archive"></i> Upload ZIP
+                            </button>
+                            <button type="button" class="upload-tab-btn" data-upload-mode="folder" style="padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; color: var(--text-secondary);">
+                                <i class="fas fa-folder-open"></i> Chọn Thư Mục
+                            </button>
+                            <button type="button" class="upload-tab-btn" data-upload-mode="path" style="padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; color: var(--text-secondary);">
+                                <i class="fas fa-keyboard"></i> Nhập Đường Dẫn
+                            </button>
+                        </div>
+
+                        <!-- ZIP Upload -->
+                        <div id="zipUploadGroup" class="upload-group" style="display: block;">
+                            <div class="form-group">
+                                <label for="extensionFile">
+                                    <i class="fas fa-file-archive"></i> Upload Extension (ZIP file)
+                                </label>
+                                <input 
+                                    type="file" 
+                                    id="extensionFile" 
+                                    name="extension_file" 
+                                    accept=".zip"
+                                    style="padding: 0.5rem;"
+                                >
+                                <small style="color: var(--text-secondary); margin-top: 0.5rem; display: block;">
+                                    <i class="fas fa-info-circle"></i> Chọn file ZIP chứa thư mục extension
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Folder Picker -->
+                        <div id="folderPickerGroup" class="upload-group" style="display: none;">
+                            <div class="form-group">
+                                <label for="extensionFolderPicker">
+                                    <i class="fas fa-folder-open"></i> Chọn Thư Mục Extension
+                                </label>
+                                <input 
+                                    type="file" 
+                                    id="extensionFolderPicker" 
+                                    name="extension_folder_picker" 
+                                    webkitdirectory
+                                    directory
+                                    style="padding: 0.5rem;"
+                                >
+                                <small style="color: var(--text-secondary); margin-top: 0.5rem; display: block;">
+                                    <i class="fas fa-info-circle"></i> Chọn thư mục chứa manifest.json của extension (Chỉ hoạt động trên Chrome/Edge)
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Path Input -->
+                        <div id="pathInputGroup" class="upload-group" style="display: none;">
+                            <div class="form-group">
+                                <label for="extensionFolder">
+                                    <i class="fas fa-keyboard"></i> Nhập Đường Dẫn Thư Mục Extension
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="extensionFolder" 
+                                    name="extension_folder" 
+                                    placeholder="D:\path\to\extension hoặc /path/to/extension"
+                                    autocomplete="off"
+                                >
+                                <small style="color: var(--text-secondary); margin-top: 0.5rem; display: block;">
+                                    <i class="fas fa-info-circle"></i> Nhập đường dẫn đầy đủ đến thư mục extension (phải chứa manifest.json)
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary" id="scanBtn">
+                                <i class="fas fa-search"></i> Quét Extension
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Database Analysis Form -->
+                    <form id="analyzeForm" class="analyze-form" style="display: none;">
+
+                        <div class="form-group">
+                            <label for="extensionId">
+                                <i class="fas fa-fingerprint"></i> Extension ID
+                                <small style="color: #64748b; margin-left: 0.5rem;">(ID của extension đã gửi behaviors về MongoDB)</small>
+                            </label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input 
+                                    type="text" 
+                                    id="extensionId" 
+                                    name="extension_id" 
+                                    placeholder="e.g., mal-ext, safe-extension"
+                                    autocomplete="off"
+                                    style="flex: 1;"
+                                >
+                                <button type="button" class="btn-secondary" id="listExtensionsBtn" style="white-space: nowrap;">
+                                    <i class="fas fa-list"></i> Danh Sách Extensions
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label for="hours">
+                                <i class="fas fa-clock"></i> Time Window (1 - 168 hours)
+                            </label>
+                            <input 
+                                type="number" 
+                                id="hours" 
+                                name="hours" 
+                                value="24" 
+                                min="1" 
+                                max="168"
+                            >
+                        </div>
+
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label for="includeManifest" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0;">
+                                <input 
+                                    type="checkbox" 
+                                    id="includeManifest" 
+                                    name="include_manifest"
+                                    style="width: auto; cursor: pointer;"
+                                >
+                                <span>
+                                    <i></i> Include Static Analysis (Manifest + JS Code)
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="form-row" id="manifestGroup" style="display: none; align-items: flex-start; margin-top: 1rem;">
+                            <div class="form-group" style="flex: 1;">
+                                <label for="manifestPath">
+                                    <i class="fas fa-file"></i> Manifest File Path (optional)
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="manifestPath" 
+                                    name="manifest_path" 
+                                    placeholder="D:\path\to\extension\manifest.json"
+                                >
+                                <small style="color: #64748b; margin-top: 0.5rem; display: block;">
+                                    Đường dẫn đến file manifest.json (nếu muốn phân tích static)
+                                </small>
+                            </div>
+                            <div class="form-group" style="flex: 0 0 auto;"></div>
+                        </div>
+
+                        <!-- Analysis Info Box -->
+                        <div class="info-box" style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 8px; padding: 1rem; margin-top: 1rem; margin-bottom: 1.5rem;">
+                            <h4 style="margin: 0 0 0.75rem 0; color: var(--text-primary); font-size: 0.95rem;">
+                                <i class="fas fa-chart-bar"></i> Chức năng phân tích bao gồm:
+                            </h4>
+                            <ul style="margin: 0; padding-left: 1.5rem; color: var(--text-secondary); line-height: 1.8;">
+                                <li><strong>Behavior Analysis:</strong> Phân tích runtime behaviors từ MongoDB</li>
+                                <li><strong>Pattern Detection:</strong> Phát hiện các attack patterns (credential theft, session hijacking, etc.)</li>
+                                <li><strong>Anomaly Detection:</strong> Phát hiện behaviors bất thường</li>
+                                <li><strong>Risk Scoring:</strong> Tính điểm rủi ro theo chuẩn Google (0-100)</li>
+                                <li><strong>Static Analysis:</strong> Phân tích manifest + JS code (nếu bật)</li>
+                            </ul>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary" id="analyzeBtn">
+                                <i class="fas fa-search"></i> Phân Tích Extension
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Installed Extensions Form -->
+                    <div id="installedExtensionsForm" class="analyze-form" style="display: none;">
+                        <div class="form-group">
+                            <h3 style="margin-bottom: 1rem;">Extension Đã Cài Đặt Trên Chrome</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                                Quét và phân tích các extension đã được cài đặt trên Google Chrome của bạn.
+                            </p>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-primary" id="scanInstalledBtn">
+                                <i class="fas fa-search"></i> Quét Extension Đã Cài Đặt
+                            </button>
+                        </div>
+
+                        <!-- Installed Extensions List -->
+                        <div id="installedExtensionsList" style="margin-top: 2rem; display: none;">
+                            <h4 style="margin-bottom: 1rem;">Danh Sách Extension</h4>
+                            <div id="extensionsContainer" style="display: grid; gap: 1rem;">
+                                <!-- Extensions will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Analyzing extension...</p>
+            </div>
+
+            <!-- Results Section -->
+            <section id="resultsSection" class="results-section" style="display: none;">
+                <div class="card">
+                    <h2><i class="fas fa-chart-line"></i> Analysis Results</h2>
+                    
+                    <!-- Risk Summary -->
+                    <div class="risk-summary" id="riskSummary">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="overview">
+                            <i class="fas fa-info-circle"></i> Tổng Quan
+                        </button>
+                        <button class="tab-btn" data-tab="patterns">
+                            <i class="fas fa-shield-virus"></i> Mẫu Hành Vi
+                        </button>
+                        <button class="tab-btn" data-tab="anomalies">
+                            <i class="fas fa-exclamation-triangle"></i> Bất Thường
+                        </button>
+                        <button class="tab-btn" data-tab="hybrid">
+                            <i class="fas fa-layer-group"></i> Phân Tích Kết Hợp
+                        </button>
+                        <button class="tab-btn" data-tab="recommendations">
+                            <i class="fas fa-lightbulb"></i> Khuyến Nghị
+                        </button>
+                    </div>
+
+                    <!-- Tab Contents -->
+                    <div class="tab-content active" id="overviewTab">
+                        <div id="overviewContent"></div>
+                    </div>
+
+                    <div class="tab-content" id="patternsTab">
+                        <div id="patternsContent"></div>
+                    </div>
+
+                    <div class="tab-content" id="anomaliesTab">
+                        <div id="anomaliesContent"></div>
+                    </div>
+
+                    <div class="tab-content" id="hybridTab">
+                        <div id="hybridContent"></div>
+                    </div>
+
+                    <div class="tab-content" id="recommendationsTab">
+                        <div id="recommendationsContent"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="error-message" style="display: none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="errorText"></span>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Nhóm 3 - Đặng Võ Việt Thành & Trần Thuận Thiên</p>
+        </footer>
+    </div>
+
+    <!-- Extensions List Modal -->
+    <div id="extensionsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-list"></i> Danh Sách Extensions Có Sẵn</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="extensionsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+
+
+

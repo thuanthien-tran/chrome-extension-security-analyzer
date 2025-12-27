@@ -1,0 +1,154 @@
+{
+  "weights": {
+    "manifest": 0.35,
+    "code_patterns": 0.30,
+    "rce_exfil": 0.20,
+    "obfuscation": 0.10,
+    "api_abuse": 0.05
+  },
+
+  "permission_scores": {
+    "debugger": 30,
+    "webRequestBlocking": 25,
+    "webRequest": 20,
+    "cookies": 20,
+    "proxy": 20,
+    "history": 10,
+    "scripting": 10,
+    "tabs": 3,
+    "activeTab": 0,
+    "storage": 0
+  },
+
+  "host_permissions": {
+    "<all_urls>": 30,
+    "http_wildcard": 20,
+    "10_plus_domains": 10,
+    "3_to_10_domains": 5,
+    "1_to_2_domains": 1,
+    "single_domain": 0
+  },
+
+  "content_scripts": {
+    "all_urls": 20,
+    "ten_plus": 10,
+    "few_domains": 2,
+    "all_frames": 5,
+    "document_start": 5
+  },
+
+  "code_patterns": {
+    "medium": 5,
+    "high": 15,
+    "critical": 30
+  },
+
+  "rce_patterns": {
+    "remote_script": 30,
+    "eval_fetch": 40,
+    "external_import": 40,
+    "proxy_modify": 30
+  },
+
+  "exfiltration_patterns": {
+    "beacon_unknown": 30,
+    "post_unknown": 25,
+    "cookie_remote": 40,
+    "token_remote": 40,
+    "keylog_remote": 50
+  },
+
+  "obfuscation": {
+    "base64_large": 20,
+    "hex": 25,
+    "unicode": 25,
+    "_0x": 30,
+    "multi_layer": 40
+  },
+
+  "api_abuse": {
+    "debugger": 100,
+    "webRequestBlocking": 70,
+    "proxy": 70,
+    "cookies": 40,
+    "webNavigation": 30,
+    "executeScript": 20
+  },
+
+  "behavior_weights": {
+    "rce_exfil": 0.40,
+    "api_abuse": 0.30,
+    "code_patterns": 0.20,
+    "network_risk": 0.10
+  },
+
+  "behavior_scores": {
+    "rce_exfil_behaviors": {
+      "DATA_EXFILTRATION": 50,
+      "KEYLOGGING": 40,
+      "FORM_DATA_CAPTURE": 35,
+      "COOKIE_ACCESS": 40,
+      "TOKEN_THEFT": 45,
+      "SESSION_HIJACKING": 50,
+      "CREDENTIAL_THEFT": 50
+    },
+    "api_abuse_behaviors": {
+      "REQUEST_INTERCEPTION": 30,
+      "FETCH_INTERCEPTION": 30,
+      "XHR_INTERCEPTION": 25,
+      "SCRIPT_INJECTION": 35,
+      "DOM_INJECTION": 30,
+      "CONTENT_MODIFICATION": 20,
+      "TAB_MONITORING": 15,
+      "HISTORY_ACCESS": 10
+    },
+    "code_patterns_behaviors": {
+      "EVAL_EXECUTION": 40,
+      "FUNCTION_CONSTRUCTOR": 35,
+      "REMOTE_SCRIPT_LOAD": 30,
+      "DYNAMIC_IMPORT": 30
+    },
+    "network_risk_behaviors": {
+      "SUSPICIOUS_DOMAIN": 20,
+      "C2_COMMUNICATION": 30,
+      "ENCRYPTED_EXFIL": 25,
+      "BEACON_TIMING": 15
+    }
+  },
+
+  "behavior_severity_mapping": {
+    "CRITICAL": {
+      "DATA_EXFILTRATION": 50,
+      "KEYLOGGING": 40,
+      "SESSION_HIJACKING": 50,
+      "CREDENTIAL_THEFT": 50,
+      "TOKEN_THEFT": 45
+    },
+    "HIGH": {
+      "FORM_DATA_CAPTURE": 35,
+      "COOKIE_ACCESS": 40,
+      "SCRIPT_INJECTION": 35,
+      "EVAL_EXECUTION": 40,
+      "FUNCTION_CONSTRUCTOR": 35,
+      "C2_COMMUNICATION": 30
+    },
+    "MEDIUM": {
+      "REQUEST_INTERCEPTION": 30,
+      "FETCH_INTERCEPTION": 30,
+      "DOM_INJECTION": 30,
+      "REMOTE_SCRIPT_LOAD": 30,
+      "ENCRYPTED_EXFIL": 25
+    },
+    "LOW": {
+      "TAB_MONITORING": 15,
+      "HISTORY_ACCESS": 10,
+      "BEACON_TIMING": 15,
+      "CONTENT_MODIFICATION": 20
+    }
+  }
+}
+
+
+
+
+

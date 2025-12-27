@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Analytics Tracker Extension",
+  "version": "1.0.0",
+  "description": "Extension for tracking user analytics and website statistics",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "history",
+    "cookies",
+    "webRequest",
+    "webRequestBlocking"
+  ],
+  "host_permissions": [
+    "https://example.com/*",
+    "https://analytics.example.com/*",
+    "https://*.example.com/*",
+    "http://localhost/*",
+    "https://*.github.io/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://example.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
+

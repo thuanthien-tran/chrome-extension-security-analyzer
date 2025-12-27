@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrome Extension Risk Analyzer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            /* Primary Colors - Cyan (matching Analyzer) */
+            --primary-color: #06b6d4;
+            --primary-hover: #0891b2;
+            --primary-light: #cffafe;
+            
+            /* Status Colors */
+            --success-color: #10b981;
+            --success-light: #d1fae5;
+            --danger-color: #ef4444;
+            --danger-light: #fee2e2;
+            --warning-color: #f59e0b;
+            --warning-light: #fef3c7;
+            --critical-color: #dc2626;
+            --critical-light: #fef2f2;
+            
+            /* Neutral Colors - Dark Theme (matching Analyzer) */
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #9ca3af;
+            --border-color: #374151;
+            --border-light: #4b5563;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+        }
+        
+        body {
+            width: 500px;
+            max-height: 800px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-primary);
+            overflow-y: auto;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .header {
+            background: var(--card-bg);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+        
+        .header h1 {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .header h1 i {
+            color: var(--primary-color);
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .header-btn {
+            padding: 0.4375rem 0.625rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+            white-space: nowrap;
+        }
+        
+        .deep-analysis-btn {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .deep-analysis-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .deep-analysis-btn i {
+            font-size: 0.75rem;
+        }
+        
+        .deep-analysis-btn span {
+            font-size: 0.6875rem;
+        }
+        
+        .theme-toggle-btn {
+            background: var(--border-color);
+            color: var(--text-primary);
+            padding: 0.4375rem;
+            min-width: 1.875rem;
+        }
+        
+        .theme-toggle-btn:hover {
+            background: var(--border-light);
+            transform: translateY(-1px);
+        }
+        
+        .theme-toggle-btn i {
+            font-size: 0.8125rem;
+        }
+        
+        /* Light mode styles */
+        body.light-mode {
+            --bg-color: #f9fafb;
+            --card-bg: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --border-light: #d1d5db;
+        }
+        
+        body.light-mode .header {
+            background: var(--card-bg);
+            border-bottom-color: var(--border-color);
+        }
+        
+        body.light-mode .extension-item,
+        body.light-mode .extension-item-unscanned {
+            background: var(--card-bg);
+            border-color: var(--border-color);
+        }
+        
+        body.light-mode .summary {
+            background: var(--card-bg);
+            border-color: var(--border-color);
+        }
+        
+        body.light-mode .summary-item {
+            background: rgba(55, 65, 81, 0.05);
+        }
+        
+        body.light-mode .scan-button,
+        body.light-mode .reset-button {
+            box-shadow: var(--shadow-sm);
+        }
+        
+        body.light-mode .tabs-container {
+            background: var(--card-bg);
+            border-color: var(--border-color);
+        }
+        
+        .content {
+            padding: 0.875rem;
+        }
+        
+        .scan-button {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .scan-button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+        
+        .scan-button:active {
+            transform: translateY(0);
+        }
+        
+        .scan-button:disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .reset-button {
+            width: 100%;
+            padding: 0.625rem 1rem;
+            background: var(--border-color);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .reset-button:hover {
+            background: var(--border-light);
+        }
+        
+        .reset-button:disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .action-bar {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        
+        .action-bar .scan-button,
+        .action-bar .reset-button {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        .action-buttons-group {
+            display: flex;
+            gap: 0.375rem;
+            flex-shrink: 0;
+        }
+        
+        .action-icon-btn {
+            width: 2.25rem;
+            height: 2.25rem;
+            padding: 0;
+            border: none;
+            border-radius: 6px;
+            background: var(--border-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+        
+        .action-icon-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .action-icon-btn:active {
+            transform: translateY(0);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+        
+        .spinner {
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results {
+            display: none;
+        }
+        
+        .summary {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.625rem 0.375rem;
+            background: rgba(55, 65, 81, 0.5);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            text-align: center;
+            min-width: 0;
+        }
+        
+        .summary-item:hover {
+            background: rgba(55, 65, 81, 0.7);
+            border-color: var(--border-light);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .summary-item-icon {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .summary-item-label {
+            font-size: 0.625rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.1875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+        
+        .summary-item-value {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+        
+        .summary-item strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .extension-item {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .extension-item:hover {
+            box-shadow: var(--shadow);
+            border-color: var(--border-light);
+        }
+        
+        /* Status indicators - Border left colors */
+        .extension-item[data-kept="true"] {
+            border-left-color: var(--success-color);
+            background: linear-gradient(to right, rgba(16, 185, 129, 0.05) 0%, var(--card-bg) 4px);
+        }
+        
+        .extension-item[data-disabled="true"] {
+            border-left-color: var(--warning-color);
+            border-left-width: 4px;
+            background: linear-gradient(to right, rgba(245, 158, 11, 0.1) 0%, var(--card-bg) 6px);
+            opacity: 0.7;
+            position: relative;
+        }
+        
+        .extension-item[data-disabled="true"]::after {
+            content: 'ĐÃ TẮT';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--warning-color);
+            color: white;
+            padding: 0.25rem 0.625rem;
+            border-radius: 12px;
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 2;
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+            white-space: nowrap;
+        }
+        
+        .extension-item[data-kept="true"][data-disabled="true"] {
+            border-left-color: var(--warning-color);
+            border-left-width: 4px;
+            background: linear-gradient(to right, rgba(245, 158, 11, 0.1) 0%, var(--card-bg) 6px);
+        }
+        
+        .extension-item[data-kept="true"][data-disabled="true"]::after {
+            content: 'ĐÃ TẮT';
+        }
+        
+        /* Status indicator dot - Ẩn vì đã có status badge trong extension-meta */
+        .extension-item::before {
+            display: none;
+        }
+        
+        .extension-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+            gap: 0.75rem;
+            position: relative;
+            padding-right: 0;
+        }
+        
+        /* Đảm bảo có không gian cho badge nếu extension bị tắt */
+        .extension-item[data-disabled="true"] .extension-header {
+            padding-right: 5rem;
+        }
+        
+        .extension-header-left {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .extension-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .extension-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .risk-score {
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.1875rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.625rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .status-badge.kept {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success-color);
+        }
+        
+        .status-badge.disabled {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning-color);
+        }
+        
+        .status-badge i {
+            font-size: 0.6875rem;
+        }
+        
+        .risk-badge {
+            padding: 0.25rem 0.625rem;
+            border-radius: 12px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .risk-badge.critical {
+            background: var(--critical-color);
+            color: white;
+        }
+        
+        .risk-badge.high {
+            background: var(--danger-color);
+            color: white;
+        }
+        
+        .risk-badge.medium {
+            background: var(--warning-color);
+            color: white;
+        }
+        
+        .risk-badge.low {
+            background: var(--success-color);
+            color: white;
+        }
+        
+        .extension-details {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .detail-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        
+        .detail-item i {
+            font-size: 0.6875rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .detail-item-disabled {
+            background: rgba(245, 158, 11, 0.15);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
+        .breakdown {
+            font-size: 0.6875rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(6, 182, 212, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid var(--primary-color);
+        }
+        
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.1875rem;
+        }
+        
+        .breakdown-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .section-title {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            margin-bottom: 0.375rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .permissions-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .permission-badge {
+            padding: 0.25rem 0.5rem;
+            background: var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            font-size: 0.625rem;
+            font-weight: 500;
+        }
+        
+        .permission-badge.dangerous {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .behaviors-list {
+            list-style: none;
+            margin-bottom: 0.75rem;
+        }
+        
+        .behavior-item {
+            font-size: 0.6875rem;
+            color: var(--danger-color);
+            margin-bottom: 0.25rem;
+            padding: 0.375rem 0.5rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 4px;
+            border-left: 3px solid var(--danger-color);
+        }
+        
+        .reasons-list {
+            list-style: none;
+            margin-bottom: 0.5rem;
+        }
+        
+        .reason-item {
+            font-size: 0.6875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+            padding-left: 0.75rem;
+            position: relative;
+        }
+        
+        .reason-item::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--primary-color);
+        }
+        
+        .reason-item-more {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .reason-item-toggle {
+            list-style: none;
+            margin-top: 0.25rem;
+        }
+        
+        .toggle-reasons-btn {
+            background: transparent;
+            border: none;
+            color: var(--primary-color);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            transition: all 0.2s ease;
+        }
+        
+        .toggle-reasons-btn:hover {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--primary-hover);
+        }
+        
+        .toggle-reasons-btn i {
+            font-size: 0.625rem;
+            transition: transform 0.2s ease;
+        }
+        
+        .toggle-reasons-btn.expanded i {
+            transform: rotate(180deg);
+        }
+        
+        .extension-actions {
+            display: flex;
+            gap: 0.375rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .action-button {
+            flex: 1;
+            min-width: 0;
+            padding: 0.5rem 0.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            white-space: nowrap;
+        }
+        
+        .action-button i {
+            font-size: 0.6875rem;
+            flex-shrink: 0;
+        }
+        
+        .action-button.view-analysis {
+            flex: 1.2;
+        }
+        
+        .action-button:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .action-button:active {
+            transform: translateY(0);
+        }
+        
+        .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .action-button.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            background: var(--border-color) !important;
+            color: var(--text-muted) !important;
+            pointer-events: none !important;
+        }
+        
+        .action-button.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .action-button[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            background: var(--border-color) !important;
+            color: var(--text-muted) !important;
+            pointer-events: none !important;
+        }
+        
+        .action-button[disabled]:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .action-button.disable {
+            background: var(--warning-color);
+            color: white;
+        }
+        
+        .action-button.disable:hover {
+            background: #d97706;
+        }
+        
+        .action-button.enable {
+            background: var(--success-color);
+            color: white;
+        }
+        
+        .action-button.enable:hover {
+            background: #059669;
+        }
+        
+        .action-button.uninstall {
+            background: var(--danger-color);
+            color: white;
+        }
+        
+        .action-button.uninstall:hover {
+            background: #dc2626;
+        }
+        
+        .action-button.keep {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .action-button.keep:hover {
+            background: var(--border-light);
+        }
+        
+        .action-button.keep.in-use {
+            background: var(--success-color);
+            color: white;
+            cursor: default;
+            opacity: 1;
+        }
+        
+        .action-button.keep.in-use:hover {
+            background: var(--success-color);
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .action-button.view-analysis {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .action-button.view-analysis:hover {
+            background: var(--primary-hover);
+        }
+        
+        .action-button.hide-analysis {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .action-button.hide-analysis:hover {
+            background: var(--border-light);
+        }
+        
+        /* Filter & Search Bar */
+        .filter-bar {
+            background: var(--card-bg);
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .search-box {
+            position: relative;
+            margin-bottom: 0.5rem;
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 0.5rem 2.5rem 0.5rem 2.25rem;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.8125rem;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .clear-search-btn {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .clear-search-btn:hover {
+            color: var(--text-primary);
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .filter-select {
+            flex: 1;
+            padding: 0.5rem;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        /* Settings Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 1.5rem;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            width: 400px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-header h2 {
+            font-size: 1.125rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.25rem;
+            padding: 0;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        
+        .modal-close:hover {
+            color: var(--text-primary);
+            background: var(--border-color);
+        }
+        
+        .analysis-modal-content {
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .modal-body {
+            color: var(--text-primary);
+        }
+        
+        .analysis-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .extension-name-large {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .risk-badge-large {
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .risk-badge-large.critical {
+            background: rgba(220, 38, 38, 0.2);
+            color: #dc2626;
+        }
+        
+        .risk-badge-large.high {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        .risk-badge-large.medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+        
+        .risk-badge-large.low {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        
+        .breakdown-section,
+        .section {
+            margin-bottom: 1rem;
+        }
+        
+        .section h4 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .settings-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .settings-section h3 {
+            font-size: 0.9375rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+        
+        .setting-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 2.5rem;
+            height: 1.25rem;
+            background: var(--border-color);
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .toggle-switch.active {
+            background: var(--primary-color);
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 1rem;
+            height: 1rem;
+            background: white;
+            border-radius: 50%;
+            top: 0.125rem;
+            left: 0.125rem;
+            transition: transform 0.2s;
+        }
+        
+        .toggle-switch.active::after {
+            transform: translateX(1.25rem);
+        }
+        
+        /* Whitelist/Blacklist Section */
+        .list-section {
+            margin-top: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: var(--bg-color);
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .list-item-name {
+            font-size: 0.8125rem;
+            color: var(--text-primary);
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .list-item-remove {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        
+        .list-item-remove:hover {
+            background: #dc2626;
+        }
+        
+        .analysis-details {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+            border-left: 4px solid var(--danger-color);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+        
+        /* Tabs styling - Modern dark theme */
+        .tabs-container {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 0.75rem;
+            background: var(--card-bg);
+            padding: 0.25rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 0.5rem 0.625rem;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: default;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+            pointer-events: none;
+            opacity: 0.9;
+        }
+        
+        .tab-button:hover {
+            color: var(--text-secondary);
+            background: transparent;
+        }
+        
+        .tab-button.active {
+            background: transparent;
+            color: var(--primary-color);
+            box-shadow: none;
+            font-weight: 600;
+            opacity: 1;
+        }
+        
+        .tab-count {
+            background: var(--border-color);
+            color: var(--text-primary);
+            padding: 0.125rem 0.375rem;
+            border-radius: 9999px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+        }
+        
+        .tab-button.active .tab-count {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .extension-item.hidden,
+        .extension-item-unscanned.hidden {
+            display: none;
+        }
+        
+        .tabs-container.disabled,
+        .tab-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .extensions-list-unscanned {
+            display: block;
+        }
+        
+        .extension-item-unscanned {
+            background: var(--card-bg);
+            padding: 0.875rem;
+            border-radius: 8px;
+            margin-bottom: 0.625rem;
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .extension-item-unscanned:hover {
+            box-shadow: var(--shadow);
+            border-color: var(--border-light);
+        }
+        
+        /* Status indicators for unscanned items */
+        .extension-item-unscanned[data-kept="true"] {
+            border-left-color: var(--success-color);
+            background: linear-gradient(to right, rgba(16, 185, 129, 0.05) 0%, var(--card-bg) 4px);
+        }
+        
+        .extension-item-unscanned[data-disabled="true"] {
+            border-left-color: var(--warning-color);
+            border-left-width: 4px;
+            background: linear-gradient(to right, rgba(245, 158, 11, 0.1) 0%, var(--card-bg) 6px);
+            opacity: 0.7;
+            position: relative;
+        }
+        
+        .extension-item-unscanned[data-disabled="true"]::after {
+            content: 'ĐÃ TẮT';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--warning-color);
+            color: white;
+            padding: 0.25rem 0.625rem;
+            border-radius: 12px;
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 2;
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+            white-space: nowrap;
+        }
+        
+        /* Đảm bảo extension-info có padding để tránh badge đè lên */
+        .extension-item-unscanned[data-disabled="true"] .extension-info {
+            padding-right: 5rem;
+        }
+        
+        .extension-item-unscanned::before {
+            content: '';
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--border-color);
+        }
+        
+        .extension-item-unscanned[data-kept="true"]::before {
+            background: var(--success-color);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+        }
+        
+        .extension-item-unscanned[data-disabled="true"]::before {
+            background: var(--warning-color);
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+        }
+        
+        .extension-item-unscanned .extension-info {
+            flex: 1;
+        }
+        
+        .extension-item-unscanned .extension-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+            line-height: 1.3;
+        }
+        
+        .extension-item-unscanned .extension-details {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(6, 182, 212, 0);
+            }
+        }
+        
+        .extension-item.new-scan {
+            border: 2px solid var(--primary-color) !important;
+            animation: pulse 2s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-shield-alt"></i> Chrome Extension Risk Analyzer</h1>
+        <div class="header-actions">
+            <button id="deepAnalysisBtn" class="header-btn deep-analysis-btn" title="Phân tích sâu">
+                <i class="fas fa-microscope"></i>
+                <span>Phân tích sâu</span>
+            </button>
+            <button id="themeToggleBtn" class="header-btn theme-toggle-btn" title="Chuyển màu nền">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="content">
+        <div class="action-bar">
+            <button id="scanButton" class="scan-button">
+                <i class="fas fa-search"></i>
+                Quét Extensions
+            </button>
+            <div class="action-buttons-group">
+                <button id="refreshBtn" class="action-icon-btn" title="Làm mới danh sách">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button id="exportBtn" class="action-icon-btn" title="Xuất kết quả">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button id="importBtn" class="action-icon-btn" title="Nhập kết quả">
+                    <i class="fas fa-upload"></i>
+                </button>
+                <button id="settingsBtn" class="action-icon-btn" title="Cài đặt">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Filter & Search Bar for Scanned Extensions -->
+        <div id="filterBar" class="filter-bar" style="display: none;">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Tìm kiếm extension..." />
+                <button id="clearSearch" class="clear-search-btn" style="display: none;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="filter-group">
+                <select id="riskFilter" class="filter-select">
+                    <option value="all">Tất cả mức độ</option>
+                    <option value="CRITICAL">Critical</option>
+                    <option value="HIGH">High</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="LOW">Low</option>
+                </select>
+                <select id="statusFilter" class="filter-select">
+                    <option value="all">Tất cả trạng thái</option>
+                    <option value="enabled">Đang bật</option>
+                    <option value="disabled">Đã tắt</option>
+                    <option value="kept">Đã giữ</option>
+                </select>
+                <select id="installTypeFilter" class="filter-select">
+                    <option value="all">Tất cả nguồn</option>
+                    <option value="normal">Chrome Web Store</option>
+                    <option value="development">Unpacked</option>
+                    <option value="sideload">Sideloaded</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Filter & Search Bar for Unscanned Extensions -->
+        <div id="filterBarUnscanned" class="filter-bar">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInputUnscanned" placeholder="Tìm kiếm extension..." />
+                <button id="clearSearchUnscanned" class="clear-search-btn" style="display: none;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="filter-group">
+                <select id="statusFilterUnscanned" class="filter-select">
+                    <option value="all">Tất cả trạng thái</option>
+                    <option value="enabled">Đang bật</option>
+                    <option value="disabled">Đã tắt</option>
+                    <option value="kept">Đã giữ</option>
+                </select>
+                <select id="installTypeFilterUnscanned" class="filter-select">
+                    <option value="all">Tất cả nguồn</option>
+                    <option value="normal">Chrome Web Store</option>
+                    <option value="development">Unpacked</option>
+                    <option value="sideload">Sideloaded</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Đang phân tích extensions...</p>
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="results" class="results" style="display: none;">
+            <!-- Tabs để phân loại extensions -->
+            <div class="tabs-container" id="tabsContainer">
+                <button class="tab-button active" data-tab="all">
+                    <i class="fas fa-box"></i>
+                    Tất Cả
+                    <span class="tab-count" id="count-all">0</span>
+                </button>
+                <button class="tab-button" data-tab="kept">
+                    <i class="fas fa-check-circle"></i>
+                    Đã Giữ
+                    <span class="tab-count" id="count-kept">0</span>
+                </button>
+                <button class="tab-button" data-tab="disabled">
+                    <i class="fas fa-pause-circle"></i>
+                    Đã Tắt
+                    <span class="tab-count" id="count-disabled">0</span>
+                </button>
+            </div>
+            
+            <div class="summary" id="summary"></div>
+            <div id="extensionsList"></div>
+        </div>
+        
+        <!-- Danh sách extensions chưa phân tích -->
+        <div id="extensionsListUnscanned" class="extensions-list-unscanned">
+            <!-- Tabs để phân loại extensions chưa quét -->
+            <div class="tabs-container" id="tabsContainerUnscanned">
+                <button class="tab-button active" data-tab="all-unscanned">
+                    <i class="fas fa-box"></i>
+                    Tất Cả
+                    <span class="tab-count" id="count-all-unscanned">0</span>
+                </button>
+                <button class="tab-button" data-tab="kept-unscanned">
+                    <i class="fas fa-check-circle"></i>
+                    Đã Giữ
+                    <span class="tab-count" id="count-kept-unscanned">0</span>
+                </button>
+                <button class="tab-button" data-tab="disabled-unscanned">
+                    <i class="fas fa-pause-circle"></i>
+                    Đã Tắt
+                    <span class="tab-count" id="count-disabled-unscanned">0</span>
+                </button>
+            </div>
+            <div id="unscannedExtensionsList"></div>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> Cài Đặt</h2>
+                <button class="modal-close" id="closeSettingsModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <div class="settings-section">
+                    <h3>Quét Tự Động</h3>
+                    <div class="setting-item">
+                        <span class="setting-label">Quét khi extension mới được cài</span>
+                        <div class="toggle-switch active" id="autoScanToggle" data-setting="autoScan"></div>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Thông báo khi phát hiện rủi ro cao</span>
+                        <div class="toggle-switch active" id="notificationsToggle" data-setting="notifications"></div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3>Whitelist (Danh sách tin cậy)</h3>
+                    <div id="whitelistContainer" class="list-section"></div>
+                    <button id="addToWhitelist" class="action-button keep" style="margin-top: 0.5rem; width: 100%;">
+                        <i class="fas fa-plus"></i> Thêm vào Whitelist
+                    </button>
+                </div>
+                
+                <div class="settings-section">
+                    <h3>Blacklist (Danh sách chặn)</h3>
+                    <div id="blacklistContainer" class="list-section"></div>
+                    <button id="addToBlacklist" class="action-button uninstall" style="margin-top: 0.5rem; width: 100%;">
+                        <i class="fas fa-plus"></i> Thêm vào Blacklist
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>
